@@ -8,7 +8,7 @@ prioritylasso(
   X,
   Y,
   weights,
-  family,
+  family = c("gaussian", "binomial", "cox"),
   type.measure,
   blocks,
   max.coef = NULL,
@@ -19,6 +19,9 @@ prioritylasso(
   foldid,
   cvoffset = FALSE,
   cvoffsetnfolds = 10,
+  mcontrol = missing.control(),
+  scale.y = FALSE,
+  return.x = TRUE,
   ...
 )
 }
@@ -51,6 +54,12 @@ prioritylasso(
 
 \item{cvoffsetnfolds}{the number of folds in the CV procedure that is performed to estimate the offsets. Default is 10. Only relevant if \code{cvoffset=TRUE}.}
 
+\item{mcontrol}{controls how to deal with blockwise missing data. For details see below or \code{\link[prioritylasso]{missing.control}}.}
+
+\item{scale.y}{determines if y gets scaled before passed to glmnet. Can only be used for \code{family = 'gaussian'}.}
+
+\item{return.x}{logical, determines if the input data should be returned by \code{prioritylasso}. Default is \code{TRUE}.}
+
 \item{...}{other arguments that can be passed to the function \code{cv.glmnet}.}
 }
 \value{
@@ -66,6 +75,15 @@ object of class \code{prioritylasso} with the following elements. If these eleme
 \item{\code{block1unpen}}{if \code{block1.penalization = FALSE}, the results of either the fitted \code{glm} or \code{coxph} object corresponding to \code{best.blocks}.}
 \item{\code{coefficients}}{vector of estimated coefficients. If \code{block1.penalization = FALSE} and \code{family = gaussian} or \code{binomial}, the first entry contains an intercept.}
 \item{\code{call}}{the function call.}
+\item{\code{X}}{the original data used for the calculation or \code{NA} if \code{return.x = FALSE}}
+\item{\code{missing.data}}{list with logical entries for every block which observation is missing (\code{TRUE} means missing)}
+\item{\code{imputation.models}}{if \code{handle.missingdata = "impute.offsets"}, it contains the used imputation models}
+\item{\code{blocks.used.for.imputation}}{if \code{handle.missingdata = "impute.offsets"}, it contains the blocks which were used for the imputation model for every block}
+\item{\code{y.scale.param}}{if \code{scale.y = TRUE}, then it contains the mean and sd used for scaling.}
+\item{\code{blocks}}{list with the description which variables belong to which block}
+\item{\code{mcontrol}}{the missing control settings used}
+\item{\code{family}}{the family of the fitted data}
+\item{\code{dim.x}}{the dimension of the used training data}
 }
 }
 \description{
@@ -80,6 +98,19 @@ This is either a generalized linear model for family "gaussian" or "binomial", o
 The first entry of \code{blocks} contains the indices of variables of the block with priority 1 (first block included in the model).
 Assume that \code{blocks = list(1:100, 101:200, 201:300)} then the block with priority 1 consists of the first 100 variables of the data matrix.
 Analogously, the block with priority 2 consists of the variables 101 to 200 and the block with priority 3 of the variables 201 to 300.
+
+\code{standardize = TRUE} leads to a standardisation of the covariables (\code{X}) in \code{glmnet} which is recommend by \code{glmnet}.
+In case of an unpenalized first block, the covariables for the first block are not standardized.
+Please note that the returned coefficients are rescaled to the original scale of the covariates as provided in \code{X}.
+Therefore, new data in \code{predict.prioritylasso} should be on the same scale as \code{X}.
+
+To use the method with blockwise missing data, one can set \code{handle.missingdata = ignore}.
+Then, to calculate the coefficients for a given block only the observations with values for this blocks are used.
+For the observations with missing values, the result from the previous block is used as the offset for the next block.
+Crossvalidated offsets are not supported with \code{handle.missingdata = ignore}.
+Please note that dealing with single missing values is not supported.
+Normally, every observation gets a unique foldid which stays the same across all blocks for the call to \code{cv.glmnet}.
+However when \code{handle.missingdata != none}, the foldid is set new for every block.
 }
 \note{
 The function description and the first example are based on the R package \code{ipflasso}. The second example is inspired by the example of \code{\link[glmnet]{cv.glmnet}} from the \code{glmnet} package.
@@ -121,9 +152,9 @@ The function description and the first example are based on the R package \code{
 Klau, S., Jurinovic, V., Hornung, R., Herold, T., Boulesteix, A.-L. (2018). Priority-Lasso: a simple hierarchical approach to the prediction of clinical outcome using multi-omics data. BMC Bioinformatics 19, 322
 }
 \seealso{
-\code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{cvm_prioritylasso}}, \code{\link[ipflasso]{cvr.ipflasso}}, \code{\link[ipflasso]{cvr2.ipflasso}}
+\code{\link[prioritylasso]{pl_data}}, \code{\link[prioritylasso]{cvm_prioritylasso}}, \code{\link[ipflasso]{cvr.ipflasso}}, \code{\link[ipflasso]{cvr2.ipflasso}}, \code{\link[prioritylasso]{missing.control}}
 }
 \author{
 Simon Klau, Roman Hornung, Alina Bauer \cr
-Maintainer: Simon Klau (\email{simonklau@ibe.med.uni-muenchen.de})
+Maintainer: Roman Hornung (\email{hornung@ibe.med.uni-muenchen.de})
 }
