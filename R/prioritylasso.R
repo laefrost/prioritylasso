@@ -169,9 +169,10 @@ prioritylasso <- function(X,
     type.measure <- "mse"
   }
   if (family == "cox") {
-    if (type.measure != "deviance")
-      warning("type.measure is set to partial likelihood.")
-    type.measure <- "deviance"
+    # if (type.measure != "deviance")
+    #  warning("type.measure is set to partial likelihood.")
+    # type.measure <- "deviance"
+    warning(paste("type.measure is set to:", type.measure))
   }
   
   if(type.measure == "auc") {
